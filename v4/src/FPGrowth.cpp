@@ -21,19 +21,17 @@ void FPGrowth::mine(std::vector<int> &result, const FPTree &fptree, int minsup, 
 {
     if (fptree.computeSupport(item) >= minsup)
     {
-        auto fpcond = fptree.makeConditional(item, minsup);
-
 #pragma omp atomic
-        ++result[fpcond.getItemset().size() - 1];
+        ++result[fptree.getItemset().size()];
 
         if (m_logEnabled)
         {
-            std::cout << '{';
-            for (auto &&item1 : fpcond.getItemset())
+            std::cout << "{ " << fptree.getItems()[item];
+            for (auto &&item1 : fptree.getItemset())
             {
-                std::cout << ' ' << fpcond.getItems()[item1];
+                std::cout << ' ' << fptree.getItems()[item1];
             }
-            std::cout << ' ' << '}' << std::endl;
+            std::cout << " }" << std::endl;
         }
 
         if (item > 0)
@@ -44,7 +42,7 @@ void FPGrowth::mine(std::vector<int> &result, const FPTree &fptree, int minsup, 
                 {
 #pragma omp section
                     {
-                        mine(result, fpcond, minsup, item - 1, (numThreads + 1) >> 1); //go down
+                        mine(result, fptree.makeConditional(item, minsup), minsup, item - 1, (numThreads + 1) >> 1); //go down
                     }
 #pragma omp section
                     {
@@ -54,8 +52,8 @@ void FPGrowth::mine(std::vector<int> &result, const FPTree &fptree, int minsup, 
             }
             else
             {
-                mine(result, fpcond, minsup, item - 1, 1); //go right
-                mine(result, fptree, minsup, item - 1, 1); //go right
+                mine(result, fptree.makeConditional(item, minsup), minsup, item - 1, 1); //go right
+                mine(result, fptree, minsup, item - 1, 1);                               //go right
             }
         }
     }

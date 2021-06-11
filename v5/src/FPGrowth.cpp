@@ -44,19 +44,17 @@ void FPGrowth::mine(std::vector<std::vector<int>> &partResult, const FPTree &fpt
 {
     if (fptree.computeSupport(item) >= minsup)
     {
-        auto fpcond = fptree.makeConditional(item, minsup);
-
 #pragma omp atomic
-        ++partResult[omp_get_thread_num()][fpcond.getItemset().size() - 1];
+        ++partResult[omp_get_thread_num()][fptree.getItemset().size()];
 
         if (m_logEnabled)
         {
-            std::cout << '{';
-            for (auto &&item1 : fpcond.getItemset())
+            std::cout << "{ " << fptree.getItems()[item];
+            for (auto &&item1 : fptree.getItemset())
             {
-                std::cout << ' ' << fpcond.getItems()[item1];
+                std::cout << ' ' << fptree.getItems()[item1];
             }
-            std::cout << ' ' << '}' << std::endl;
+            std::cout << " }" << std::endl;
         }
 
         if (item > 0)
@@ -65,7 +63,7 @@ void FPGrowth::mine(std::vector<std::vector<int>> &partResult, const FPTree &fpt
             {
 #pragma omp task shared(partResult)
                 {
-                    mine(partResult, fpcond, minsup, item - 1); //go down
+                    mine(partResult, fptree.makeConditional(item, minsup), minsup, item - 1); //go down
                 }
 #pragma omp task shared(partResult)
                 {
@@ -74,8 +72,8 @@ void FPGrowth::mine(std::vector<std::vector<int>> &partResult, const FPTree &fpt
             }
             else
             {
-                mine(partResult, fpcond, minsup, item - 1); //go right
-                mine(partResult, fptree, minsup, item - 1); //go right
+                mine(partResult, fptree.makeConditional(item, minsup), minsup, item - 1); //go right
+                mine(partResult, fptree, minsup, item - 1);                               //go right
             }
         }
     }
