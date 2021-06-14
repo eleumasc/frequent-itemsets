@@ -28,7 +28,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            std::cout << "File '" + params.getInputFilename() + "' does not exists" << std::endl;
+            std::cout << "Cannot open file: " << params.getInputFilename() << std::endl;
             return 1;
         }
     }
