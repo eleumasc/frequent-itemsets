@@ -6,7 +6,7 @@
 
 FPGrowth::FPGrowth(const Params &params) : m_logEnabled(params.isLogEnabled()),
                                            m_numThreads(params.hasNumThreads() ? params.getNumThreads() : std::thread::hardware_concurrency()),
-                                           m_seqBound(params.hasSeqBound() ? params.getSeqBound() : 0)
+                                           m_seqBound(params.hasSeqBound() ? params.getSeqBound() : 20)
 {
 }
 
