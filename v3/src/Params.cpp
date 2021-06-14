@@ -75,7 +75,7 @@ Params Params::parseRaw(int argc, char **argv)
 
 std::string Params::getUsage(int argc, char **argv)
 {
-    return std::string(argv[0]) + " <filename> <minsup> [-l]";
+    return std::string(argv[0]) + " <filename> <minsup> [-l] [-t <numThreads>]";
 }
 
 bool Params::isGood() const
