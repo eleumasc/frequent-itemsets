@@ -11,8 +11,6 @@ class FPTree
 public:
     static FPTree make(const Transactions &ts);
 
-    FPTree() = default;
-
     int computeSupport(int item) const;
 
     FPTree makeConditional(int item, int minsup) const;
@@ -47,8 +45,6 @@ private:
     };
 
     using Header = std::vector<std::vector<HeaderRecord>>;
-
-    FPTree(int header_size);
 
     std::shared_ptr<Node> m_tree;
 

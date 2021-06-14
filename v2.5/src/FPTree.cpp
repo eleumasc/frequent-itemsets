@@ -31,8 +31,9 @@ FPTree FPTree::make(const Transactions &ts)
         }
     }
 
-    FPTree fptree(ts.getItems().size());
+    FPTree fptree;
     fptree.m_tree = std::move(rootChild);
+    fptree.m_header = Header(ts.getItems().size());
     fptree.enumerate();
     fptree.m_items = std::make_shared<std::vector<std::string>>(ts.getItems());
     return fptree;
@@ -57,7 +58,7 @@ FPTree FPTree::makeConditional(int item, int minsup) const
     assert(item < m_header.size());
     assert(minsup > 0);
 
-    FPTree fptree(item);
+    FPTree fptree;
     fptree.m_tree = m_tree;
     fptree.m_header = climb(item);
     fptree.m_itemset.push_back(item);
@@ -74,10 +75,6 @@ const std::vector<int> &FPTree::getItemset() const
 const std::vector<std::string> &FPTree::getItems() const
 {
     return *m_items;
-}
-
-FPTree::FPTree(int header_size) : m_header(Header(header_size))
-{
 }
 
 inline void FPTree::enumerate()
@@ -101,15 +98,13 @@ FPTree::Header FPTree::climb(int item) const
 {
     Header result(item);
     std::vector<HeaderRecord> countStack;
-    auto beginRecord = m_header[item].begin();
-    auto endRecord = m_header[item].end();
-    for (auto currRecord = beginRecord; currRecord != endRecord; ++currRecord)
+    for (auto currRecord = m_header[item].begin(); currRecord != m_header[item].end(); ++currRecord)
     {
         auto nextRecord = currRecord + 1;
         int count = currRecord->count;
         for (Node *node = currRecord->node->parent; node; node = node->parent)
         {
-            if (nextRecord != endRecord && node->index > nextRecord->node->index)
+            if (nextRecord != m_header[item].end() && node->index > nextRecord->node->index)
             {
                 if (!countStack.empty() && countStack.back().node == node)
                 {
