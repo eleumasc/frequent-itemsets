@@ -44,7 +44,6 @@ void FPGrowth::mine(std::vector<std::vector<int>> &partResult, const FPTree &fpt
 {
     if (fptree.computeSupport(item) >= minsup)
     {
-#pragma omp atomic
         ++partResult[omp_get_thread_num()][fptree.getItemset().size()];
 
         if (m_logEnabled)

@@ -36,24 +36,16 @@ void FPGrowth::mine(std::vector<int> &result, const FPTree &fptree, int minsup, 
 
         if (item > 0)
         {
-            if (numThreads > 1)
+#pragma omp parallel sections num_threads(2) if (numThreads > 1)
             {
-#pragma omp parallel sections num_threads(numThreads)
+#pragma omp section
                 {
-#pragma omp section
-                    {
-                        mine(result, fptree.makeConditional(item, minsup), minsup, item - 1, (numThreads + 1) >> 1); //go down
-                    }
-#pragma omp section
-                    {
-                        mine(result, fptree, minsup, item - 1, numThreads >> 1); //go right
-                    }
+                    mine(result, fptree.makeConditional(item, minsup), minsup, item - 1, (numThreads + 1) >> 1); //go down
                 }
-            }
-            else
-            {
-                mine(result, fptree.makeConditional(item, minsup), minsup, item - 1, 1); //go right
-                mine(result, fptree, minsup, item - 1, 1);                               //go right
+#pragma omp section
+                {
+                    mine(result, fptree, minsup, item - 1, numThreads >> 1); //go right
+                }
             }
         }
     }
