@@ -7,8 +7,6 @@ Params Params::parseRaw(int argc, char **argv)
     Params params;
 
     int status = 0;
-    int *idst = &params.m_minsup;
-    bool *ihas = nullptr;
     for (int i = 1; i < argc; ++i)
     {
         std::string word = argv[i];
@@ -20,28 +18,14 @@ Params Params::parseRaw(int argc, char **argv)
         }
         else if (status == 1)
         {
-            try
+            if (parseInt(word, &params.m_minsup) && params.m_minsup > 0)
             {
-                int i = std::stoi(word);
-                if (i > 0)
-                {
-                    *idst = i;
-                    if (ihas)
-                    {
-                        *ihas = true;
-                        ihas = nullptr;
-                    }
-                }
-                else
-                {
-                    break;
-                }
+                status = 2;
             }
-            catch (const std::invalid_argument &ex)
+            else
             {
                 break;
             }
-            status = 2;
         }
         else if (status == 2)
         {
@@ -51,9 +35,19 @@ Params Params::parseRaw(int argc, char **argv)
             }
             else if (word == "-t")
             {
-                idst = &params.m_numThreads;
-                ihas = &params.m_hasNumThreads;
-                status = 1;
+                status = 3;
+            }
+            else
+            {
+                break;
+            }
+        }
+        else if (status == 3)
+        {
+            if (parseInt(word, &params.m_numThreads) && params.m_numThreads > 0)
+            {
+                params.m_hasNumThreads = true;
+                status = 2;
             }
             else
             {
@@ -106,4 +100,17 @@ bool Params::hasNumThreads() const
 int Params::getNumThreads() const
 {
     return m_numThreads;
+}
+
+bool Params::parseInt(const std::string &s, int *i)
+{
+    try
+    {
+        *i = std::stoi(s);
+    }
+    catch (const std::invalid_argument &ex)
+    {
+        return false;
+    }
+    return true;
 }

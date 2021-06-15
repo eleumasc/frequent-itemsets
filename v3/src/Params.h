@@ -22,6 +22,8 @@ public:
     int getNumThreads() const;
 
 private:
+    static bool parseInt(const std::string &s, int *i);
+
     bool m_good = false;
 
     std::string m_inputFilename;
