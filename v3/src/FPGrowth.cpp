@@ -16,14 +16,14 @@ FPGrowth::FPGrowth(const Params &params) : m_logEnabled(params.isLogEnabled()),
 
 std::vector<int> FPGrowth::mine(const FPTree &fptree, int minsup) const
 {
-    return mineTopLevel(fptree, minsup, fptree.getItems().size() - 1, m_numThreads);
+    return mineTopLevel(fptree, minsup, fptree.getItems().size() - 1);
 }
 
-std::vector<int> FPGrowth::mineTopLevel(const FPTree &fptree, int minsup, int leftItem, int numThreads) const
+std::vector<int> FPGrowth::mineTopLevel(const FPTree &fptree, int minsup, int leftItem) const
 {
     auto result = std::vector<int>(fptree.getItems().size());
-#pragma omp parallel for schedule(dynamic) num_threads(numThreads) reduction(vec_int_plus \
-                                                                                             : result)
+#pragma omp parallel for schedule(dynamic) reduction(vec_int_plus \
+                                                     : result) num_threads(m_numThreads)
     for (int item = leftItem; item >= 0; --item)
     {
         if (fptree.computeSupport(item) >= minsup)

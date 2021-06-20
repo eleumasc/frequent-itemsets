@@ -17,7 +17,7 @@ private:
 
     int m_numThreads;
 
-    std::vector<int> mineTopLevel(const FPTree &fptree, int minsup, int leftItem, int numThreads) const;
+    std::vector<int> mineTopLevel(const FPTree &fptree, int minsup, int leftItem) const;
 
     void mine(std::vector<int> &result, const FPTree &fptree, int minsup, int leftItem) const;
 };
