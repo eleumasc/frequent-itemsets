@@ -11,18 +11,39 @@ FPGrowth::FPGrowth(const Params &params) : m_logEnabled(params.isLogEnabled()),
 
 std::vector<int> FPGrowth::mine(const FPTree &fptree, int minsup) const
 {
-    std::vector<int> result(fptree.getItems().size());
-    omp_set_nested(true);
-    mine(result, fptree, minsup, fptree.getItems().size() - 1, m_numThreads);
+    auto partResult = std::vector<std::vector<int>>(m_numThreads);
+    for (int i = 0; i < m_numThreads; ++i)
+    {
+        partResult[i] = std::vector<int>(fptree.getItems().size());
+    }
+
+#pragma omp parallel num_threads(m_numThreads)
+    {
+#pragma omp single
+        {
+#pragma omp task shared(partResult)
+            {
+                mine(partResult, fptree, minsup, fptree.getItems().size() - 1, m_numThreads);
+            }
+        }
+    }
+
+    auto result = std::vector<int>(fptree.getItems().size());
+    for (int i = 0; i < result.size(); ++i)
+    {
+        for (int j = 0; j < m_numThreads; ++j)
+        {
+            result[i] += partResult[j][i];
+        }
+    }
     return result;
 }
 
-void FPGrowth::mine(std::vector<int> &result, const FPTree &fptree, int minsup, int item, int numThreads) const
+void FPGrowth::mine(std::vector<std::vector<int>> &partResult, const FPTree &fptree, int minsup, int item, int numThreads) const
 {
     if (fptree.computeSupport(item) >= minsup)
     {
-#pragma omp atomic
-        ++result[fptree.getItemset().size()];
+        ++partResult[omp_get_thread_num()][fptree.getItemset().size()];
 
         if (m_logEnabled)
         {
@@ -36,21 +57,26 @@ void FPGrowth::mine(std::vector<int> &result, const FPTree &fptree, int minsup, 
 
         if (item > 0)
         {
-#pragma omp parallel sections num_threads(2) if (numThreads > 1)
+            if (numThreads > 1)
             {
-#pragma omp section
+#pragma omp task shared(partResult)
                 {
-                    mine(result, fptree.makeConditional(item, minsup), minsup, item - 1, (numThreads + 1) >> 1); //go down
+                    mine(partResult, fptree.makeConditional(item, minsup), minsup, item - 1, (numThreads + 1) >> 1); //go down
                 }
-#pragma omp section
+#pragma omp task shared(partResult)
                 {
-                    mine(result, fptree, minsup, item - 1, numThreads >> 1); //go right
+                    mine(partResult, fptree, minsup, item - 1, numThreads >> 1); //go right
                 }
+            }
+            else
+            {
+                mine(partResult, fptree.makeConditional(item, minsup), minsup, item - 1, 1); //go down
+                mine(partResult, fptree, minsup, item - 1, 1);                               //go right
             }
         }
     }
     else if (item > 0)
     {
-        mine(result, fptree, minsup, item - 1, numThreads); //go right
+        mine(partResult, fptree, minsup, item - 1, numThreads); //go right
     }
 }
