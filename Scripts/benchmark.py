@@ -1,21 +1,20 @@
 import csv
-import os
 from pathlib import Path
 import subprocess
 import time
 
 
-HARDWARE_CONCURRENCY = [8]
+HARDWARE_CONCURRENCY = 8
 NUM_THREADS = [2, 4, 6, 8, 10, 12]
 
-benchmark_info = [
+CONFIG_LIST = [
     {
         "versions": [True, True, True, True, True, True],
         "dataset": "chess",
         "filename": Path("datasets/chess.dat"),
         "ts_count": 3196,
         "minsup_%": [10, 20, 30, 40, 50, 60, 70, 80, 90],
-        "numThreads": HARDWARE_CONCURRENCY,
+        "numThreads": [HARDWARE_CONCURRENCY],
         "seqBound": [20]
     },
     {
@@ -24,7 +23,7 @@ benchmark_info = [
         "filename": Path("datasets/accidents.dat"),
         "ts_count": 340183,
         "minsup_%": [10, 20, 30, 40, 50, 60, 70, 80, 90],
-        "numThreads": HARDWARE_CONCURRENCY,
+        "numThreads": [HARDWARE_CONCURRENCY],
         "seqBound": [20]
     },
     {
@@ -67,9 +66,7 @@ benchmark_info = [
 
 
 def path_for_dist(version):
-    binary_path = \
-        Path("dist/frequent-itemsets") if os.name != 'nt' else Path("dist/frequent-itemsets.exe")
-    return str(Path(version).joinpath(binary_path))
+    return str(Path(version).joinpath(Path("dist/frequent-itemsets")))
 
 
 def absolute_minsup(minsup_r, ts_count):
@@ -93,94 +90,93 @@ def benchmark(args, n=3):
         return -1
 
 
-def benchmark_1(version, info):
-    for minsup_r in info["minsup_%"]:
-        minsup = absolute_minsup(minsup_r, info["ts_count"])
+def benchmark_1(version, config):
+    for minsup_r in config["minsup_%"]:
+        minsup = absolute_minsup(minsup_r, config["ts_count"])
         t = benchmark([
             path_for_dist(version),
-            str(info["filename"]),
+            str(config["filename"]),
             str(minsup)
         ])
-        yield [t, version, info["dataset"], minsup_r]
+        yield [t, version, config["dataset"], minsup_r]
 
 
-def benchmark_2(version, info):
-    for minsup_r in info["minsup_%"]:
-        minsup = absolute_minsup(minsup_r, info["ts_count"])
-        for numThreads in info["numThreads"]:
+def benchmark_2(version, config):
+    for minsup_r in config["minsup_%"]:
+        minsup = absolute_minsup(minsup_r, config["ts_count"])
+        for numThreads in config["numThreads"]:
             t = benchmark([
                 path_for_dist(version),
-                str(info["filename"]),
+                str(config["filename"]),
                 str(minsup),
                 "-t", str(numThreads)
             ])
-            yield [t, version, info["dataset"], minsup_r, numThreads]
+            yield [t, version, config["dataset"], minsup_r, numThreads]
 
 
-def benchmark_3(version, info):
-    for minsup_r in info["minsup_%"]:
-        minsup = absolute_minsup(minsup_r, info["ts_count"])
-        for numThreads in info["numThreads"]:
-            for seqBound in info["seqBound"]:
+def benchmark_3(version, config):
+    for minsup_r in config["minsup_%"]:
+        minsup = absolute_minsup(minsup_r, config["ts_count"])
+        for numThreads in config["numThreads"]:
+            for seqBound in config["seqBound"]:
                 t = benchmark([
                     path_for_dist(version),
-                    str(info["filename"]),
+                    str(config["filename"]),
                     str(minsup),
                     "-t", str(numThreads),
                     "-b", str(seqBound)
                 ])
-                yield [t, version, info["dataset"], minsup_r, numThreads, seqBound]
+                yield [t, version, config["dataset"], minsup_r, numThreads, seqBound]
 
 
-def benchmark_v1(info):
-    yield from benchmark_1("v1", info)
+def benchmark_v1(config):
+    yield from benchmark_1("v1", config)
 
 
-def benchmark_v2(info):
-    yield from benchmark_1("v2", info)
+def benchmark_v2(config):
+    yield from benchmark_1("v2", config)
 
 
-def benchmark_v25(info):
-    yield from benchmark_1("v2.5", info)
+def benchmark_v25(config):
+    yield from benchmark_1("v2.5", config)
 
 
-def benchmark_v3(info):
-    yield from benchmark_2("v3", info)
+def benchmark_v3(config):
+    yield from benchmark_2("v3", config)
 
 
-def benchmark_v4(info):
-    yield from benchmark_2("v4", info)
+def benchmark_v4(config):
+    yield from benchmark_2("v4", config)
 
 
-def benchmark_v5(info):
-    yield from benchmark_3("v5", info)
+def benchmark_v5(config):
+    yield from benchmark_3("v5", config)
 
 
 def benchmark_all():
-    for info in benchmark_info:
-        if info["versions"][0]:
-            yield from benchmark_v1(info)
-        if info["versions"][1]:
-            yield from benchmark_v2(info)
-        if info["versions"][2]:
-            yield from benchmark_v25(info)
-        if info["versions"][3]:
-            yield from benchmark_v3(info)
-        if info["versions"][4]:
-            yield from benchmark_v4(info)
-        if info["versions"][5]:
-            yield from benchmark_v5(info)
+    for config in CONFIG_LIST:
+        if config["versions"][0]:
+            yield from benchmark_v1(config)
+        if config["versions"][1]:
+            yield from benchmark_v2(config)
+        if config["versions"][2]:
+            yield from benchmark_v25(config)
+        if config["versions"][3]:
+            yield from benchmark_v3(config)
+        if config["versions"][4]:
+            yield from benchmark_v4(config)
+        if config["versions"][5]:
+            yield from benchmark_v5(config)
 
 
-def report_benchmark(bench, filename):
+def report_benchmark(benchmark, filename):
     with open(filename, 'w') as file:
         writer = csv.writer(file)
         writer.writerow(["time", "version", "dataset",
                         "minsup", "numThreads", "seqBound"])
-        for row in bench:
+        for row in benchmark:
             print(row)
             writer.writerow(row)
 
 
 report_benchmark(benchmark_all(), "res_all.csv")
-
